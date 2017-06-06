@@ -4,6 +4,9 @@
 // Todo's:
 // - Small indicator of size of selection: Format: XxY. Eg: 7x6
 
+// Modified: 2017/06/06 by Ed Salisbury (@edsalisbury)
+// Forked at https://github.com/EdSalisbury/dfdesigner.git
+
 // map is a 3d array which can be accessed in this way: map[z][x][y]
 // z = elevation, top to bottom (0 = top, map_size_z = bottom)
 // x = west to east (0 = west, map_size_x = east)
@@ -63,7 +66,12 @@ var tile_types = {
     stairs_up: 'stairs_up',
     stairs_down: 'stairs_down',
     stairs_updown: 'stairs_updown',
-    ramp_up: 'ramp_up'
+    ramp_up: 'ramp_up',
+    wall: 'wall',
+    bed: 'bed',
+    door: 'door',
+    chest: 'chest',
+    cabinet: 'cabinet'
 };
 
 // images variable stores loaded images in a dictionary
@@ -80,7 +88,12 @@ var images = {
     ramp_up: 'des_channelup.png',
     cursor: 'cursor.png',
     cursor_blink: 'cursor_blink.png',
-    chrome: 'chrome.png'
+    chrome: 'chrome.png',
+    wall: 'wall.png',
+    bed: 'bed.png',
+    door: 'door.png',
+    chest: 'chest.png',
+    cabinet: 'cabinet.png'
 };
 
 // current cursor position (it is always on the same z-level as the camera)
@@ -204,7 +217,7 @@ function startDrawLoop() {
 
 function tick() {
     WTF.trace.timeStamp('tick');
-    
+
     cursor_blink = !cursor_blink;
 }
 
@@ -285,7 +298,7 @@ function loadTools() {
     tools.dig = {
         name: "Dig",
         type: tool_type_area_square | tool_type_area_circle,
-        hotkey: "d", 
+        hotkey: "d",
         preview: true,
         keycode: 68,
         run: function(map, tool_selector) {
@@ -299,7 +312,7 @@ function loadTools() {
     tools.channel = {
         name: "Channel",
         type: tool_type_area_square | tool_type_area_circle,
-        hotkey: "h", 
+        hotkey: "h",
         preview: true,
         keycode: 72,
         run: function(map, tool_selector) {
@@ -313,7 +326,7 @@ function loadTools() {
     tools.stairs_up = {
         name: "Upward stairway",
         type: tool_type_area_square | tool_type_area_circle,
-        hotkey: "u", 
+        hotkey: "u",
         preview: true,
         keycode: 85,
         run: function(map, tool_selector) {
@@ -327,7 +340,7 @@ function loadTools() {
     tools.stairs_down = {
         name: "Downward stairway",
         type: tool_type_area_square | tool_type_area_circle,
-        hotkey: "j", 
+        hotkey: "j",
         preview: true,
         keycode: 74,
         run: function(map, tool_selector) {
@@ -355,7 +368,7 @@ function loadTools() {
     tools.ramp_up = {
         name: "Upward ramp",
         type: tool_type_area_square | tool_type_area_circle,
-        hotkey: "r", 
+        hotkey: "r",
         preview: true,
         keycode: 82,
         run: function(map, tool_selector) {
@@ -364,6 +377,77 @@ function loadTools() {
             });
         }
     };
+
+    // Build tool
+    tools.wall = {
+        name: "Wall",
+        type: tool_type_area_square | tool_type_area_circle,
+        hotkey: "w",
+        preview: true,
+        keycode: 87,
+        run: function(map, tool_selector) {
+            tool_selector(function(x,y,z) {
+                map[z][x][y] = tile_types.wall;
+            });
+        }
+    };
+
+    // Build bed tool
+    tools.bed = {
+        name: "Bed",
+        type: tool_type_area_square | tool_type_area_circle,
+        hotkey: "e",
+        preview: true,
+        keycode: 69,
+        run: function(map, tool_selector) {
+            tool_selector(function(x,y,z) {
+                map[z][x][y] = tile_types.bed;
+            });
+        }
+    };
+
+    // Build door tool
+    tools.door = {
+        name: "Door",
+        type: tool_type_area_square | tool_type_area_circle,
+        hotkey: "o",
+        preview: true,
+        keycode: 79,
+        run: function(map, tool_selector) {
+            tool_selector(function(x,y,z) {
+                map[z][x][y] = tile_types.door;
+            });
+        }
+    };
+
+    // Build chest tool
+    tools.chest = {
+        name: "Chest",
+        type: tool_type_area_square | tool_type_area_circle,
+        hotkey: "c",
+        preview: true,
+        keycode: 67,
+        run: function(map, tool_selector) {
+            tool_selector(function(x,y,z) {
+                map[z][x][y] = tile_types.chest;
+            });
+        }
+    };
+
+    // Build cabinet tool
+    tools.cabinet = {
+        name: "Cabinet",
+        type: tool_type_area_square | tool_type_area_circle,
+        hotkey: "n",
+        preview: true,
+        keycode: 78,
+        run: function(map, tool_selector) {
+            tool_selector(function(x,y,z) {
+                map[z][x][y] = tile_types.cabinet;
+            });
+        }
+    };
+
 
     tools.space1 = { name: "Spacer", select: function(oldtool) { cursor_tool = oldtool; } };
 
@@ -420,7 +504,7 @@ function loadTools() {
 
             var output = '';
 
-            
+
             var min_x = map_size_x + 1;
             var max_x = -1;
             var min_y = map_size_y + 1;
@@ -439,7 +523,7 @@ function loadTools() {
                     max_z = Math.max(max_z, z);
                 }
             });
-            
+
             for (z = min_z; z <= max_z; z += 1) {
                 output += "#dig Blueprint generated by DFDesigner. Z-level: " + (z + 1).toString() + ".\n\n";
                 for (y = min_y; y <= max_y; y += 1) {
@@ -456,7 +540,7 @@ function loadTools() {
 
             var splash = document.getElementById('export');
             splash.style.display = 'block';
-            
+
             var exporttext = document.getElementById('exporttext');
             exporttext.innerHTML = output;
         }
@@ -511,7 +595,7 @@ function create_selector_area_circle(start_z, end_z, center_x, center_y, radius)
         for (z = start_z; z <= end_z; z += 1) {
             var x = radius, y = 0;
             var radiusError = 1 - x;
-            
+
             while (x >= y) {
                 horizontalLine(tool, -x + center_x, x + center_x, y + center_y, z);
                 horizontalLine(tool, -y + center_x, y + center_x, x + center_y, z);
@@ -577,7 +661,7 @@ function setCanvasSize(set_world_size) {
 
         camera_x = Math.round((map_size_x - - menu_width_tiles - viewport_width_tiles) / 2);
         camera_y = Math.round((map_size_y - viewport_height_tiles) / 2);
-    }    
+    }
 
     logmessage("viewport size (w, h): " + viewport_width.toString() + ", " + viewport_height.toString());
 
@@ -669,7 +753,7 @@ function enableDesigner() {
                         cursor_start_z = camera_z;
     					cursor_start_x = cursor_x;
     					cursor_start_y = cursor_y;
-    					
+
     					cursor_down = true;
     				}
                 } else {
@@ -683,6 +767,7 @@ function enableDesigner() {
         // Check if any of the tools have the currently pushed key set as the hotkey
         for(var tool in tools) {
             tool = tools[tool];
+
             if (evt.keyCode == tool.keycode) {
                 switchTool(tool);
 
@@ -806,7 +891,7 @@ function handle_onMouseUp(x, y) {
             // clicked a menu item, the menu items start at: tile_size * 4 and are then evenly spaced apart by text_line_height pixels
             var menu_start = tile_size * 4;
             var menu_index = Math.round((y - menu_start) / text_line_height);
-            
+
             if (menu_index >= 0) {
 
                 var n = 0;
@@ -852,9 +937,9 @@ function handle_onMouseMove(x, y) {
 
     // ignore mouse moves inside the menu
     var menu_bar_x = (Math.floor(viewport_width / tile_size) - menu_width_tiles) * tile_size;
-    if (x > menu_bar_x) { 
+    if (x > menu_bar_x) {
         cursor_in_menu = true;
-        return; 
+        return;
     } else {
         cursor_in_menu = false;
     }
@@ -904,7 +989,7 @@ function moveCursor(z, x, y, dont_move_camera) {
     camera_z = Math.min(Math.max(z, 0), map_size_z - 1);
     cursor_x = Math.min(Math.max(x, 0), map_size_x - 1);
     cursor_y = Math.min(Math.max(y, 0), map_size_y - 1);
-    
+
     if (!dont_move_camera) {
         moveCameraToCursor();
     }
@@ -1099,7 +1184,7 @@ function drawCurZlevelBackground() {
             // only paint non-empty tiles
             var curtile = map[camera_z][x][y];
             if (curtile === tile_types.hidden) {
-                
+
                 var curbgtile = map_background[camera_z][x][y];
 
                 // hidden tiles have random backgrounds, paint those
@@ -1138,7 +1223,7 @@ function draw() {
         } else {
         }
     }
-	
+
 	// render cursor
 	viewport_cursor_drawcontext.drawImage(images.cursor, (cursor_x - camera_x + 1) * 16, (cursor_y - camera_y + 1) * 16, tile_size, tile_size);
 
